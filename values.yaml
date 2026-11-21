@@ -1,15 +1,11 @@
 image:
-  # Empty uses the chart's appVersion.
   tag: ""
 
-# The image starts as root, gives /config to this user and group, then runs Bazarr as them.
 puid: 1000
 pgid: 1000
 
 timezone: UTC
 
-# Bazarr's one database.
-# The keys default to those of a kubernetes.io/basic-auth Secret.
 postgres:
   host: ""
   port: 5432
@@ -28,21 +24,16 @@ resources:
     cpu: 50m
     memory: 256Mi
 
-# Each is an existing claim, or else a ReadWriteOnce claim the chart creates.
-# An empty storageClassName uses the cluster's default class.
 persistence:
-  # Bazarr's config.yaml, logs, backups and cache.
   config:
     existingClaim: ""
     storageClassName: ""
     size: 1Gi
-  # The TV and movie libraries, where Bazarr writes each subtitle beside its video.
   data:
     existingClaim: ""
     storageClassName: ""
     size: ""
 
-# A Gateway API HTTPRoute to the web UI.
 httpRoute:
   enabled: false
   parentRefs: []
