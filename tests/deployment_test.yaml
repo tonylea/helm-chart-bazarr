@@ -170,29 +170,40 @@ tests:
               cpu: 50m
               memory: 256Mi
 
-  - it: mounts the chart's claims at /config and /data
+  - it: mounts /config, and each data mount at /data/<name>, from the chart's claims
     asserts:
       - equal:
           path: spec.template.spec.containers[0].volumeMounts
           value:
             - name: config
               mountPath: /config
-            - name: data
-              mountPath: /data
+            - name: data-tv
+              mountPath: /data/tv
+            - name: data-movies
+              mountPath: /data/movies
       - equal:
           path: spec.template.spec.volumes
           value:
             - name: config
               persistentVolumeClaim:
                 claimName: bazarr-config
-            - name: data
+            - name: data-tv
               persistentVolumeClaim:
-                claimName: bazarr-data
+                claimName: bazarr-data-tv
+            - name: data-movies
+              persistentVolumeClaim:
+                claimName: bazarr-data-movies
 
   - it: mounts existing claims when given
     set:
       persistence.config.existingClaim: my-config
-      persistence.data.existingClaim: my-data
+      persistence.data:
+        - name: tv-1
+          existingClaim: my-tv-1
+        - name: tv-2
+          existingClaim: my-tv-2
+        - name: movies
+          existingClaim: my-movies
     asserts:
       - equal:
           path: spec.template.spec.volumes
@@ -200,6 +211,27 @@ tests:
             - name: config
               persistentVolumeClaim:
                 claimName: my-config
-            - name: data
+            - name: data-tv-1
               persistentVolumeClaim:
-                claimName: my-data
+                claimName: my-tv-1
+            - name: data-tv-2
+              persistentVolumeClaim:
+                claimName: my-tv-2
+            - name: data-movies
+              persistentVolumeClaim:
+                claimName: my-movies
+
+  - it: fails without a data mount
+    set:
+      persistence.data: []
+    asserts:
+      - failedTemplate:
+          errorMessage: persistence.data needs at least one mount
+
+  - it: fails when a data mount has no name
+    set:
+      persistence.data:
+        - existingClaim: my-data
+    asserts:
+      - failedTemplate:
+          errorMessage: each persistence.data mount needs a name

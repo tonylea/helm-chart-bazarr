@@ -26,10 +26,7 @@ persistence:
     existingClaim: ""
     storageClassName: ""
     size: 1Gi
-  data:
-    existingClaim: ""
-    storageClassName: ""
-    size: ""
+  data: []
 
 httpRoute:
   enabled: false

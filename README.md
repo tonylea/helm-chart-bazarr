@@ -1,5 +1,7 @@
 # Bazarr Helm Chart
 
+![Downloads](https://img.shields.io/github/downloads/tonylea/helm-chart-bazarr/total)
+
 Deploys [Bazarr](https://www.bazarr.media/) from LinuxServer's image, [`lscr.io/linuxserver/bazarr`](https://github.com/linuxserver/docker-bazarr), the one Bazarr's docs recommend.
 
 The chart is opinionated: Bazarr keeps its data in Postgres rather than SQLite.
@@ -24,9 +26,11 @@ It runs one replica, and stops the old pod before starting the new one, since tw
 | `persistence.config.existingClaim` | none; the chart creates a claim |
 | `persistence.config.storageClassName` | the cluster's default class |
 | `persistence.config.size` | `1Gi` |
-| `persistence.data.existingClaim` | none; the chart creates a claim |
-| `persistence.data.storageClassName` | the cluster's default class |
-| `persistence.data.size` | none; required unless `existingClaim` is set |
+| `persistence.data` | none; at least one mount required |
+| `persistence.data[].name` | required; mounted at `/data/<name>` |
+| `persistence.data[].existingClaim` | none; the chart creates a claim |
+| `persistence.data[].storageClassName` | the cluster's default class |
+| `persistence.data[].size` | none; required unless `existingClaim` is set |
 | `httpRoute.enabled` | `false` |
 | `httpRoute.parentRefs` | none; required when enabled |
 | `httpRoute.hostnames` | none |
@@ -43,7 +47,7 @@ The chart sets these as environment variables:
 - A Postgres server, with the database and the user that owns it made beforehand.
 - One or two Secrets holding the Postgres user and password.
 - A storage class for the claims the chart creates, the cluster's default unless named.
-  A claim the chart creates is `ReadWriteOnce`, so sharing `/data` with Sonarr and Radarr needs an existing claim.
+  A claim the chart creates is `ReadWriteOnce`, so sharing a data mount with Sonarr and Radarr needs an existing claim.
   Bazarr's own documentation is in [its wiki](https://wiki.bazarr.media/).
 - The Gateway API's `HTTPRoute` CRD, when `httpRoute.enabled` is set.
 
@@ -66,7 +70,10 @@ postgres:
       name: bazarr-postgres-app
 persistence:
   data:
-    existingClaim: media
+    - name: tv
+      existingClaim: tv
+    - name: movies
+      existingClaim: movies
 ```
 
 ## Development
