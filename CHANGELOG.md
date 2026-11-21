@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [2.0.0](https://github.com/tonylea/helm-chart-bazarr/compare/v1.0.1...v2.0.0) (2026-11-21)
+
+### ⚠ BREAKING CHANGES
+
+* persistence.data is now a list of named mounts, each at
+  /data/<name>, with at least one required.
+
+### Features
+
+* mount each data volume at /data/<name> ([c2ccf59](https://github.com/tonylea/helm-chart-bazarr/commit/c2ccf5992c9441ab12dae51e2fb4e614a02d48f6))
+
+### Documentation
+
+* show the chart's download count ([a44d734](https://github.com/tonylea/helm-chart-bazarr/commit/a44d734ed7b5382b06353aa0cadc834f33f8957a))
+
 ## [1.0.1](https://github.com/tonylea/helm-chart-bazarr/compare/v1.0.0...v1.0.1) (2026-11-21)
 
 ### Bug Fixes
