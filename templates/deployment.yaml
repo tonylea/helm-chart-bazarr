@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "bazarr.labels" . | nindent 4 }}
+spec:
+  # Two copies of Bazarr can't share one database, so the old pod stops before the new one starts.
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "bazarr.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "bazarr.podLabels" . | nindent 8 }}
+    spec:
+      enableServiceLinks: false
+      automountServiceAccountToken: false
+      # No runAsUser: the image starts as root to chown /config, then drops to PUID and PGID.
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: bazarr
+          image: "lscr.io/linuxserver/bazarr:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          env:
+            - name: PUID
+              value: {{ .Values.puid | quote }}
+            - name: PGID
+              value: {{ .Values.pgid | quote }}
+            - name: TZ
+              value: {{ .Values.timezone | quote }}
+            - name: POSTGRES_ENABLED
+              value: "true"
+            - name: POSTGRES_HOST
+              value: {{ required "postgres.host is required" .Values.postgres.host | quote }}
+            - name: POSTGRES_PORT
+              value: {{ .Values.postgres.port | quote }}
+            - name: POSTGRES_DATABASE
+              value: {{ .Values.postgres.database | quote }}
+            - name: POSTGRES_USERNAME
+              valueFrom:
+                {{- include "bazarr.secretKeyRef" (list "postgres.username" .Values.postgres.username) | nindent 16 }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                {{- include "bazarr.secretKeyRef" (list "postgres.password" .Values.postgres.password) | nindent 16 }}
+            # Bazarr's wiki: needed when Bazarr doesn't run as root, which it doesn't after start-up.
+            - name: PGSSLCERT
+              value: /tmp/postgresql.crt
+          ports:
+            - name: http
+              containerPort: 6767
+          # Bazarr has no health endpoint that works without a login, so the probes check its port.
+          # The first start creates Bazarr's schema in Postgres, so start-up gets 5 minutes.
+          startupProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 10
+            failureThreshold: 30
+          livenessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 30
+          readinessProbe:
+            tcpSocket:
+              port: http
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: {{ include "bazarr.claimName" (list . "config") }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "bazarr.claimName" (list . "data") }}
