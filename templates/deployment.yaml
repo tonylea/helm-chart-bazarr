@@ -55,7 +55,6 @@ spec:
             - name: http
               containerPort: 6767
           # Bazarr has no health endpoint that works without a login, so the probes check its port.
-          # The first start creates Bazarr's schema in Postgres, so start-up gets 5 minutes.
           startupProbe:
             tcpSocket:
               port: http
