@@ -2,7 +2,7 @@ apiVersion: v2
 name: bazarr
 description: Deploys Bazarr, which finds and downloads subtitles for Sonarr and Radarr
 type: application
-version: 1.0.0
+version: 1.0.1
 appVersion: "v1.6.2-ls373"
 home: https://github.com/tonylea/helm-chart-bazarr
 sources:

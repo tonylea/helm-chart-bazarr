@@ -1,6 +1,6 @@
 {
   "name": "helm-chart-bazarr",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Deploys Bazarr, which finds and downloads subtitles for Sonarr and Radarr",
   "private": true,
   "repository": {

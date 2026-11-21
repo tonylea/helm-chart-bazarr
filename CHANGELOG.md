@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [1.0.1](https://github.com/tonylea/helm-chart-bazarr/compare/v1.0.0...v1.0.1) (2026-11-21)
+
+### Bug Fixes
+
+* leave resource requests to whoever deploys the chart ([113bd9c](https://github.com/tonylea/helm-chart-bazarr/commit/113bd9c4ad330da2598db46d8c9ebccbffc45663))
+
+### Documentation
+
+* keep only the comments that record a decision ([a94d7f5](https://github.com/tonylea/helm-chart-bazarr/commit/a94d7f5e6af0677116cc4f92e54aa09b5c9e05da))
+* keep the README to the fixed settings and what the chart needs ([3d380c0](https://github.com/tonylea/helm-chart-bazarr/commit/3d380c05d8421c91f73a45153896532cba79db56))
+
 ## 1.0.0 (2026-11-21)
 
 ### Features
