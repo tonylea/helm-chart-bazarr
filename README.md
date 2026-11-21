@@ -1,16 +1,9 @@
 # Bazarr Helm Chart
 
 Deploys [Bazarr](https://www.bazarr.media/) from LinuxServer's image, [`lscr.io/linuxserver/bazarr`](https://github.com/linuxserver/docker-bazarr), the one Bazarr's docs recommend.
-Bazarr takes the series and movies from Sonarr and Radarr, finds subtitles for them, and writes each one beside its video.
 
 The chart is opinionated: Bazarr keeps its data in Postgres rather than SQLite.
-It runs one replica:
-
-- A Deployment that stops the old pod before starting the new one, since two copies of Bazarr can't share one database.
-- A volume for `/config` (`config.yaml`, logs, backups and cache) and one for `/data` (the TV and movie libraries), each an existing claim or a claim the chart creates.
-- A Service on Bazarr's port, 6767, and an optional Gateway API `HTTPRoute` to it.
-- A start-up, liveness and readiness probe on that port, since Bazarr has no health endpoint that works without a login.
-  Start-up gets 5 minutes, since the first start creates Bazarr's schema in Postgres.
+It runs one replica, and stops the old pod before starting the new one, since two copies of Bazarr can't share a database.
 
 ## Values
 
@@ -38,38 +31,20 @@ It runs one replica:
 | `httpRoute.parentRefs` | none; required when enabled |
 | `httpRoute.hostnames` | none |
 
-### What the chart sets
+## Fixed settings
 
-Bazarr reads only its Postgres settings from the environment.
-Everything else (its login, API key, the connections to Sonarr and Radarr, subtitle providers and languages) is set in the web UI and kept in its database.
-Set the login on first start: Bazarr has none until one is set.
+The chart sets these as environment variables:
 
-### Postgres
-
-Bazarr needs one database, `postgres.database`, owned by the user in the Secret; Bazarr creates its tables in it.
-The user and password can come from one Secret or two.
-Their keys default to those of a `kubernetes.io/basic-auth` Secret, which is also how CloudNativePG names them.
-
-`PGSSLCERT` is set to `/tmp/postgresql.crt`, as [Bazarr's wiki](https://wiki.bazarr.media/Additional-Configuration/PostgreSQL-Database/) says is needed when it doesn't run as root.
-
-### User and group
-
-LinuxServer's image starts as root, gives `/config` to `puid` and `pgid`, then runs Bazarr as them.
-They need to be able to write to `/data` as well, since Bazarr writes subtitles there.
-
-### Storage
-
-`/data` holds the TV and movie libraries.
-Mount them at the same paths Sonarr and Radarr see, so the paths they report need no mapping in Bazarr.
-
-A claim the chart creates is `ReadWriteOnce`.
-To share `/data` with Sonarr and Radarr, give an existing claim that all three mount.
+- Postgres on, with the connection from `postgres`.
+- `PGSSLCERT` as `/tmp/postgresql.crt`, which [Bazarr's wiki](https://wiki.bazarr.media/Additional-Configuration/PostgreSQL-Database/) says is needed when Bazarr doesn't run as root.
 
 ## Requirements
 
-- A Postgres server, with the database and user made beforehand.
+- A Postgres server, with the database and the user that owns it made beforehand.
 - One or two Secrets holding the Postgres user and password.
 - A storage class for the claims the chart creates, the cluster's default unless named.
+  A claim the chart creates is `ReadWriteOnce`, so sharing `/data` with Sonarr and Radarr needs an existing claim.
+  Bazarr's own documentation is in [its wiki](https://wiki.bazarr.media/).
 - The Gateway API's `HTTPRoute` CRD, when `httpRoute.enabled` is set.
 
 ## Usage
