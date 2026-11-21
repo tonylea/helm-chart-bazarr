@@ -1,0 +1,19 @@
+suite: Service
+release:
+  name: bazarr
+templates:
+  - templates/service.yaml
+tests:
+  - it: exposes Bazarr's port to the pod's selector labels
+    asserts:
+      - equal:
+          path: spec.selector
+          value:
+            app.kubernetes.io/name: bazarr
+            app.kubernetes.io/instance: bazarr
+      - equal:
+          path: spec.ports
+          value:
+            - name: http
+              port: 6767
+              targetPort: http

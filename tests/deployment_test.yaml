@@ -1,0 +1,196 @@
+suite: Deployment
+release:
+  name: bazarr
+templates:
+  - templates/deployment.yaml
+values:
+  - ../ci/kind-values.yaml
+tests:
+  - it: runs one replica of the chart's appVersion, stopping the old pod first
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 1
+      - equal:
+          path: spec.strategy.type
+          value: Recreate
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: lscr.io/linuxserver/bazarr:v1.6.2-ls373
+
+  - it: uses the image tag when one is set
+    set:
+      image.tag: v1.6.1-ls372
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: lscr.io/linuxserver/bazarr:v1.6.1-ls372
+
+  - it: leaves the chart's version off the pod, so a chart-only release doesn't restart it
+    chart:
+      version: 9.9.9
+    asserts:
+      - equal:
+          path: spec.template.metadata.labels
+          value:
+            app.kubernetes.io/name: bazarr
+            app.kubernetes.io/instance: bazarr
+            app.kubernetes.io/version: v1.6.2-ls373
+
+  - it: starts as root with the default seccomp profile, and no service links or API token
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext
+          value:
+            seccompProfile:
+              type: RuntimeDefault
+      - equal:
+          path: spec.template.spec.enableServiceLinks
+          value: false
+      - equal:
+          path: spec.template.spec.automountServiceAccountToken
+          value: false
+
+  - it: passes the user, group, timezone and Bazarr's Postgres settings
+    set:
+      puid: 1026
+      pgid: 100
+      timezone: Europe/Berlin
+      postgres.port: 5433
+      postgres.database: subtitles
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env
+          value:
+            - name: PUID
+              value: "1026"
+            - name: PGID
+              value: "100"
+            - name: TZ
+              value: Europe/Berlin
+            - name: POSTGRES_ENABLED
+              value: "true"
+            - name: POSTGRES_HOST
+              value: postgres
+            - name: POSTGRES_PORT
+              value: "5433"
+            - name: POSTGRES_DATABASE
+              value: subtitles
+            - name: POSTGRES_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres
+                  key: username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres
+                  key: password
+            - name: PGSSLCERT
+              value: /tmp/postgresql.crt
+
+  - it: defaults the user, group, timezone and database
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PUID
+            value: "1000"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PGID
+            value: "1000"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: TZ
+            value: UTC
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: POSTGRES_PORT
+            value: "5432"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: POSTGRES_DATABASE
+            value: bazarr
+
+  - it: fails without the Postgres host
+    set:
+      postgres.host: ""
+    asserts:
+      - failedTemplate:
+          errorMessage: postgres.host is required
+
+  - it: fails without the Postgres password's Secret
+    set:
+      postgres.password.secretKeyRef.name: ""
+    asserts:
+      - failedTemplate:
+          errorMessage: postgres.password.secretKeyRef.name is required
+
+  - it: probes Bazarr's port, giving start-up 5 minutes
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].startupProbe
+          value:
+            tcpSocket:
+              port: http
+            periodSeconds: 10
+            failureThreshold: 30
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe
+          value:
+            tcpSocket:
+              port: http
+            periodSeconds: 30
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe
+          value:
+            tcpSocket:
+              port: http
+
+  - it: requests CPU and memory, with no limits
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources
+          value:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+
+  - it: mounts the chart's claims at /config and /data
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts
+          value:
+            - name: config
+              mountPath: /config
+            - name: data
+              mountPath: /data
+      - equal:
+          path: spec.template.spec.volumes
+          value:
+            - name: config
+              persistentVolumeClaim:
+                claimName: bazarr-config
+            - name: data
+              persistentVolumeClaim:
+                claimName: bazarr-data
+
+  - it: mounts existing claims when given
+    set:
+      persistence.config.existingClaim: my-config
+      persistence.data.existingClaim: my-data
+    asserts:
+      - equal:
+          path: spec.template.spec.volumes
+          value:
+            - name: config
+              persistentVolumeClaim:
+                claimName: my-config
+            - name: data
+              persistentVolumeClaim:
+                claimName: my-data
