@@ -1,5 +1,7 @@
 # Bazarr Helm Chart
 
+![Downloads](https://img.shields.io/github/downloads/tonylea/helm-chart-bazarr/total)
+
 Deploys [Bazarr](https://www.bazarr.media/) from LinuxServer's image, [`lscr.io/linuxserver/bazarr`](https://github.com/linuxserver/docker-bazarr), the one Bazarr's docs recommend.
 
 The chart is opinionated: Bazarr keeps its data in Postgres rather than SQLite.
